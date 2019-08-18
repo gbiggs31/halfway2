@@ -21,7 +21,7 @@ from geopy.geocoders import Nominatim
 
 d= {}
 geolocator = Nominatim(user_agent= "GoogleV3")
-numentries = int(input("how many addresses?"))
+numentries = int(input("How many addresses?"))
 z = 1
 while z <= numentries:
     #user_input = input
@@ -33,7 +33,7 @@ while z <= numentries:
         d["user_input_latitude{0}".format(z)] = d["user_input_geocode{0}".format(z)].latitude
         d["user_input_longitude{0}".format(z)] = d["user_input_geocode{0}".format(z)].longitude
     except:
-        print("this failed! The address must have been whack")
+        print("This failed! Please try again.")
     z += 1
 
 

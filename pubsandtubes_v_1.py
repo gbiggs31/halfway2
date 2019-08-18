@@ -7,9 +7,9 @@
 import pandas as pd
 import numpy as np
 import math
-import missingno as mn
-import matplotlib.pyplot as plt
-import seaborn as sn
+# import missingno as mn
+# import matplotlib.pyplot as plt
+# import seaborn as sn
 import pickle
 from geopy.geocoders import Nominatim
 
@@ -18,16 +18,14 @@ from geopy.geocoders import Nominatim
 #again can cover that later, for now just take the closest one
 #orrrr just treat them as independant pubs and double the length of your data, it wouldn't add much processing time
 
-#jupyter commands dont work in actual scripts
-
 
 d= {}
 geolocator = Nominatim(user_agent= "GoogleV3")
-numentries = int(input("how many addresses you got fool?"))
+numentries = int(input("how many addresses?"))
 z = 1
 while z <= numentries:
     #user_input = input
-    d["user_input{0}".format(z)] = input("What's your address yo? ")
+    d["user_input{0}".format(z)] = input("What's your address? ")
     #type(name)
     #d["user_input{0}".format(z)]= "London"
     d["user_input_geocode{0}".format(z)]  = geolocator.geocode(d["user_input{0}".format(z)])
@@ -39,18 +37,18 @@ while z <= numentries:
     z += 1
 
 
-pubswithdist = pd.read_csv('C:\\Users\\George\\Downloads\\MITM\\pubswithdist.csv',index_col=0)
+pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
 #read in the already calculated tube network travel time data set
 
-#data_tubetravel = pd.read_csv('C:\\Users\\George\\Downloads\\MITM\\data_tubetravel.csv',index_col=0)
+data_tubetravel = pd.read_csv('.\\data_tubetravel.csv',index_col=0)
 
-with open('C:\\Users\\George\\Downloads\\MITM\\.pickle','rb') as f:
-    data_tubetravel = pickle.load(f,encoding="utf8")
+# with open('.\\.pickle','rb') as f:
+#     data_tubetravel = pickle.load(f,encoding="utf8")
 
 
-data_stations = pd.read_csv("C:\\Users\\George\\Downloads\\MITM\\stations_csv.sv.csv")
+data_stations = pd.read_csv(".\\stations_csv.sv.csv")
 #now grab the all important travel times
-data_travel = pd.read_csv("C:\\Users\\George\\Downloads\\MITM\\travel_times.csv")
+data_travel = pd.read_csv(".\\travel_times.csv")
 
 
 #need to assign every pub a nearest tube

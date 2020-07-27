@@ -19,6 +19,7 @@ from geopy.geocoders import Nominatim
 #orrrr just treat them as independant pubs and double the length of your data, it wouldn't add much processing time
 
 
+# get the user input
 def get_coords_for_address(numentries):
     d= {}
     # z = 1
@@ -38,33 +39,45 @@ def get_coords_for_address(numentries):
             except:
                 print("Google can't locate that address! Please try again.")
             z += 1
-
+    return d
 geolocator = Nominatim(user_agent= "GoogleV3")
 numentries = int(input("How many addresses?"))
-get_coords_for_address(numentries)
+location_entry = get_coords_for_address(numentries)
 
 
+# define and get all input data 
+def get_pubs_data():
+    pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
+    #read in the already calculated tube network travel time data set
+    return pubswithdist
 
+def get_tube_travel():
+    data_tubetravel = pd.read_csv('.\\data_tubetravel.csv',index_col=0)
+    return data_tubetravel
 
-pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
-#read in the already calculated tube network travel time data set
+def get_station_data():
+    data_stations = pd.read_csv(".\\stations_csv.sv.csv")
+    return data_stations
 
-data_tubetravel = pd.read_csv('.\\data_tubetravel.csv',index_col=0)
+def get_travel_data():
+    #now grab the all important travel times
+    data_travel = pd.read_csv(".\\travel_times.csv")
+    return data_travel
 
-# with open('.\\.pickle','rb') as f:
-#     data_tubetravel = pickle.load(f,encoding="utf8")
-
-
-data_stations = pd.read_csv(".\\stations_csv.sv.csv")
-#now grab the all important travel times
-data_travel = pd.read_csv(".\\travel_times.csv")
-
+def get_all_data():
+    pubswithdist = get_pubs_data()
+    data_tubetravel = get_tube_travel()
+    data_sations = get_station_data()
+    data_travel = get_travel_data()
+    return pubswithdist, data_tubetravel, data_sations, data_travel 
 
 #need to assign every pub a nearest tube
+# this should be cached appropriately
 #need to define a function for distance between coordinates
 #use the haversine formula
 #need the angle in radians
 
+#potential cython candidate
 def coords_to_distance(x1,x2,y1,y2):
     x1 = x1 * math.pi / 180
     x2 = x2 * math.pi / 180
@@ -78,6 +91,24 @@ def coords_to_distance(x1,x2,y1,y2):
     #this is in km
     return d
 
+# could optimise but time is so fast probably not worth it
+def find_nearest_station(input_lat, input_long, user_num, data_stations):
+    min_distance = 1000
+    closest_tube_id = []
+    closest_tube = []
+    for tube in data_stations.itertuples():
+        #get distance between input coords and all tubes
+        current_dist = coords_to_distance(getattr(tube,'latitude'),input_lat,getattr(tube,'longitude'),input_long)
+        if current_dist < min_distance:
+            min_distance = current_dist
+            closest_tube_id = getattr(tube,'id')
+    return closest_tube_id        
+
+
+
+
+
+# all code after this could be cleaned up and improved
 def find_second_station(previous_station):
     alreadycheckedlines= []
     for line in data_travel[data_travel['station1'] == previous_station].iterrows():
@@ -90,19 +121,7 @@ def find_second_station(previous_station):
 
 #need this to be self contained, and output an identifiable dataset ready for further processing
 def distance_to_pubs(input_lat,input_long,user_num,data_stations):
-    min_distance = 1000
-    closest_tube_id = []
-    closest_tube = []
-    for tube in data_stations.itertuples():
-        #get distance between input coords and all tubes
-        current_dist = coords_to_distance(getattr(tube,'latitude'),input_lat,getattr(tube,'longitude'),input_long)
-        if current_dist < min_distance:
-            min_distance = current_dist
-            closest_tube_id = getattr(tube,'id')
-            #closest_line = getattr(line, '')
-            #this will return the closest tube station id to the input coords
-            #could potentially be optimised further but not worth it because of how quick it currently is
-            
+    closest_tube_id = find_nearest_station(input_lat,input_long,user_num,data_stations)            
     #this loop returns the closest tube station to the input coords
     #then the below works out the travel time to all the things from that
     #data tubetravel contains travel time from each tube station to every other tube station

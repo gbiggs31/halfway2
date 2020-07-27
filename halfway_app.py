@@ -49,7 +49,7 @@ def main():
     # define and get all input data 
     @st.cache(suppress_st_warning=True)
     def get_pubs_data():
-        url = 'https://github.com/gbiggs31/halfway2/pubswithdist.csv'
+        url = 'https://github.com/gbiggs31/halfway2/blob/master/pubswithdist.csv'
         # pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
         pubswithdist = pd.read_csv(url)
         #read in the already calculated tube network travel time data set

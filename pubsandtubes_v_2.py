@@ -101,22 +101,32 @@ def coords_to_distance(x1,x2,y1,y2):
 
 # person to tube vector
 
-
-
-
+# need matrix 2, should also precompute
 
 # could optimise but time is so fast probably not worth it
-def find_nearest_station(input_lat, input_long, user_num, data_stations):
-    min_distance = 1000
-    closest_tube_id = []
-    closest_tube = []
+# dont care about the explicit closest station if we're checking all of them!
+def compute_station_distance_from_user(input_lat, input_long, data_stations):
+    # min_distance = 1000
+    person_tube = []
+    # closest_tube = []
     for tube in data_stations.itertuples():
         #get distance between input coords and all tubes
-        current_dist = coords_to_distance(getattr(tube,'latitude'),input_lat,getattr(tube,'longitude'),input_long)
-        if current_dist < min_distance:
-            min_distance = current_dist
-            closest_tube_id = getattr(tube,'id')
-    return closest_tube_id        
+        current_time = coords_to_distance(getattr(tube,'latitude'),input_lat,getattr(tube,'longitude'),input_long)
+        current_time = current_time / 0.084
+        # response is in km so convert to minutes
+
+        person_tube.append(current_time)
+
+
+        # if current_dist < min_distance:
+        #     min_distance = current_dist
+        #     closest_tube_id = getattr(tube,'id')
+    return person_tube        
+
+
+
+
+
 
 def nearest_station_to_rest(closest_tube_id):
     person_travel = []

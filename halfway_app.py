@@ -60,19 +60,19 @@ def main():
 
     @st.cache(suppress_st_warning=True)
     def get_station_data():
-        data_stations = pd.read_csv(".\\stations.csv")
+        data_stations = pd.read_csv('.\\stations.csv')
         return data_stations
 
     @st.cache(suppress_st_warning=True)
     def get_travel_data():
         #now grab the all important travel times
-        data_travel = pd.read_csv(".\\travel_times.csv")
+        data_travel = pd.read_csv('.\\travel_times.csv')
         return data_travel
 
     @st.cache(suppress_st_warning=True)
     def get_tube_to_tube_data():
         # get simply the travel time all tubes to all tubes
-        station_to_station_time = pd.read_csv(".\\station_to_station_time.csv")
+        station_to_station_time = pd.read_csv('.\\station_to_station_time.csv')
         return station_to_station_time
 
     @st.cache(suppress_st_warning=True)

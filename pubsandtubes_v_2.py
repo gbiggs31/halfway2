@@ -1,7 +1,7 @@
 ############################           PUBS AND TUBES          ############################
 
 
-#this is version 1 of the pubs and tubes script
+#this is version 2 of the pubs and tubes script
 
 
 import pandas as pd
@@ -18,6 +18,7 @@ from geopy.geocoders import Nominatim
 
 # get the user input
 def get_coords_for_address(numentries):
+    geolocator = Nominatim(user_agent= "GoogleV3")
     d= {}
     # z = 1
     # while z <= numentries:
@@ -37,9 +38,6 @@ def get_coords_for_address(numentries):
                 print("Google can't locate that address! Please try again.")
             z += 1
     return d
-geolocator = Nominatim(user_agent= "GoogleV3")
-numentries = int(input("How many addresses?"))
-location_entry = get_coords_for_address(numentries)
 
 
 # define and get all input data 
@@ -66,14 +64,20 @@ def get_tube_to_tube_data():
     station_to_station_time = pd.read_csv(".\\station_to_station_time.csv")
     return station_to_station_time
 
+def get_pub_to_station_data():
+    # get the precomputed walking time from each pub to each station
+    pub_to_station_data = pd.read_csv(r'./pub_time_to_stations.csv')
+    return pub_to_station_data
 
-def get_all_data():
-    pubswithdist = get_pubs_data()
-    data_tubetravel = get_tube_travel()
-    data_sations = get_station_data()
-    data_travel = get_travel_data()
-    station_to_station_time = get_tube_to_tube_data()
-    return pubswithdist, data_tubetravel, data_sations, data_travel, station_to_station_time 
+
+# def get_all_data():
+#     pubswithdist = get_pubs_data()
+#     data_tubetravel = get_tube_travel()
+#     data_sations = get_station_data()
+#     data_travel = get_travel_data()
+#     station_to_station_time = get_tube_to_tube_data()
+#     pub_to_station_data = get_pub_to_station_data()
+#     return pubswithdist, data_tubetravel, data_sations, data_travel, station_to_station_time, pub_to_station_data 
 
 #need to assign every pub a nearest tube
 # this should be cached appropriately
@@ -97,122 +101,89 @@ def coords_to_distance(x1,x2,y1,y2):
 
 # try and set it up to do the two matrix and a vector methodology
 
-# matrix 1, tube to tube, precomputed, stored and in get data
-
-# person to tube vector
-
-# need matrix 2, should also precompute
-
 # could optimise but time is so fast probably not worth it
 # dont care about the explicit closest station if we're checking all of them!
 def compute_station_distance_from_user(input_lat, input_long, data_stations):
-    # min_distance = 1000
     person_tube = []
-    # closest_tube = []
+
     for tube in data_stations.itertuples():
+
         #get distance between input coords and all tubes
         current_time = coords_to_distance(getattr(tube,'latitude'),input_lat,getattr(tube,'longitude'),input_long)
         current_time = current_time / 0.084
         # response is in km so convert to minutes
 
         person_tube.append(current_time)
-
-
-        # if current_dist < min_distance:
-        #     min_distance = current_dist
-        #     closest_tube_id = getattr(tube,'id')
+    person_tube = pd.DataFrame(person_tube)
     return person_tube        
 
 
 
+# so at this point should have both matrices and a person vector, just put them together
+
+def combine_person_and_station_travel(person_tube, tube_to_tube_data):
+    # if we treat this as the columns are the FROM stations and the rows are the TO stations then it works!
+    user_and_tube = tube_to_tube_data + person_tube.values
+    user_and_tube = pd.DataFrame(user_and_tube.min(axis=1))
+    #this produces a dataframe with the combined travel time to have the user walk to the tube, then take it to every other station
+    # currently the columns are the FROM stations and the rows are the TO stations
+    return user_and_tube
 
 
+def combine_person_and_pub_travel(user_and_tube, pub_to_station):
+    total_travel = user_and_tube.values + pub_to_station
+    total_travel = pd.DataFrame(total_travel.min())
 
-def nearest_station_to_rest(closest_tube_id):
-    person_travel = []
-    tube_id = []
-    tube_results = []
+    # this should return the total time it take a person to get to each pub in question
+    # just need to compute walking time and check it isn't faster
+    return total_travel
+
+def compute_all_pubs(latitude, longitude):
+    data_stations = get_station_data()
     
-    from ast import literal_eval
-    test_dict = literal_eval(data_tubetravel[data_tubetravel['id'] == closest_tube_id]['travel_times'][closest_tube_id - 1])
+    person_tube = compute_station_distance_from_user(latitude, longitude, data_stations)
     
-    for destination in test_dict:
-        person_travel.append(test_dict[destination]['time'])
-        tube_id.append(destination)
-    return person_travel, tube_id
-
-
-
-# all code after this could be cleaned up and improved
-# think we can remove the explicited second station and even nearest tube calculation
-
-# def find_second_station(previous_station):
-#     alreadycheckedlines= []
-#     for line in data_travel[data_travel['station1'] == previous_station].iterrows():
-#         #print(line)
-#         alreadycheckedlines.append(line[1]['line'])
-#         datatravel_temp = data_travel[~data_travel['line'].isin(alreadycheckedlines)]
-#         data_filtered = data_stations[data_stations['id'].isin(datatravel_temp['station1'])]
-#     return data_filtered
-
-
-#need this to be self contained, and output an identifiable dataset ready for further processing
-def distance_to_pubs(input_lat,input_long,user_num,data_stations):
-    closest_tube_id = find_nearest_station(input_lat,input_long,user_num,data_stations)            
-    #this loop returns the closest tube station to the input coords
-    #then the below works out the travel time to all the things from that
-    #data tubetravel contains travel time from each tube station to every other tube station
-    #so just filter to the nearest tube station and check time to the rest of the network
-    #need to check each line as well
-
-    person_travel, tube_id = nearest_station_to_rest(closest_tube_id)
-
-    #the above returns the travel time to all stations from the nearest station
-    user_num = str(user_num)    
-    person_travel = pd.DataFrame(person_travel)
-    tube_id = pd.DataFrame(tube_id)
-    individ_tube = pd.merge(tube_id,person_travel,left_index = True, right_index = True)
-    individ_tube.columns = ['tube_id','travel_time_to_tube'+user_num]
+    tube_to_tube_data = get_tube_to_tube_data()
+    user_and_tube = combine_person_and_station_travel(person_tube, tube_to_tube_data)
     
+    pub_to_station = get_pub_to_station_data()
+    total_travel = combine_person_and_pub_travel(user_and_tube, pub_to_station)
+    return total_travel
+
+
+def compute_best_pubs(combined_user_times):
+    combined_user_times['all_combined_time'] = combined_user_times.sum(axis=1)
+    combined_user_times.sort_values(by = 'all_combined_time', inplace = True)
+    return combined_user_times
+
+def master():    
+
+    numentries = int(input("How many addresses?"))
+    location_entry = get_coords_for_address(numentries)
     
-    full_travel = pd.merge(pubs_with_dist_filt,individ_tube, how = 'left',left_on = '0_y',right_on = 'tube_id')
-    min_distance_time = min_distance / 0.084
-    full_travel['total time' + user_num] = full_travel['traveltime_totube_pub'] + full_travel['travel_time_to_tube'+str(user_num)] + min_distance_time
-    return full_travel,closest_tube_id
+    combined_user_times = []
+    for user in range(numentries):
+        latitude = location_entry['user_input_latitude' + str(user)]
+        longitude = location_entry['user_input_longitude' + str(user)]
+        total_user_times = compute_all_pubs(latitude, longitude)
+        if user == 0:
+            combined_user_times = pd.DataFrame(total_user_times)
+        else:
+            combined_user_times[user] = total_user_times[0]
+
+    sorted_user_times = compute_best_pubs(combined_user_times)   
+
+    #ditch any nans
+    sorted_user_times = sorted_user_times.dropna()
+    return sorted_user_times
+
+answer = master()
+print(answer)
 
 
 
 
-#could be worth filtering pubs with dist to only a couple of columns so that it's neater?
-#could be worth filtering pubs with dist to only a couple of columns so that it's neater?
-pubs_with_dist_filt = pubswithdist[['0_y','index','traveltime_totube_pub']]
-numpeeps = 2
-i = 1
-while i <= numpeeps:
-    full_travel_i_1, i_closest_tube_id = distance_to_pubs(d["user_input_latitude{0}".format(i)],d["user_input_longitude{0}".format(i)],i,data_stations)
-    full_travel_i_2, i_second_closest_tube = distance_to_pubs(d["user_input_latitude{0}".format(i)],d["user_input_longitude{0}".format(i)],i,find_second_station(i_closest_tube_id))
-    full_travel_i = pd.merge(full_travel_i_1,full_travel_i_2, left_index=True,right_index=True)
-    #full_travel_i['True_shortest' + str(i)] = min(full_travel_i['total time' + str(i) + '_x'], full_travel_i['total time' + str(i) + '_y'])
-    full_travel_i['true_shortest' + str(i)] = full_travel_i[['total time' + str(i) + '_x', 'total time' + str(i) + '_y']].min(axis=1)
-    full_travel_i_final = full_travel_i[['true_shortest' + str(i)]]
-    if i > 1:
-        full_current = pd.merge(full_travel_i_final,full_current,left_index=True,right_index=True)
-    else:
-        full_current = full_travel_i_final
-    i += 1
-#test_fulltravel,test_closest_tube_id = distance_to_pubs(51.5020275,-0.0267862,2,data_stations)
-#this works fine, worth in your loop goingn twice for each person and checking the other nearest tube
-#then combine those datasets, take only the shortest travel time to each pub and move on
-#ok so once that works what needs to happen?
-
-cols_to_use = ['true_shortest' + str(p+1) for p in range(numpeeps)]
-#full_current['Total'] = full_current.loc[:, cols_to_use].sum(axis=1)
-full_current['Total'] = full_current[cols_to_use].sum(axis =1 )
-full_current = pd.merge(full_current,pubswithdist,left_index= True,right_index=True)
-full_current = full_current[full_current['Total'] != 0]
 
 
-finalfinal = full_current.sort_values('Total')
-finalfinal_top = finalfinal.head(10)
-finalfinal_top = finalfinal_top[['Total','2','8']]
-print(finalfinal_top)
+
+

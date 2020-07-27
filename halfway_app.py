@@ -49,36 +49,50 @@ def main():
     # define and get all input data 
     @st.cache(suppress_st_warning=True)
     def get_pubs_data():
-        pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
+        url = 'https://github.com/gbiggs31/halfway2/pubswithdist.csv'
+        # pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
+        pubswithdist = pd.read_csv(url)
         #read in the already calculated tube network travel time data set
         return pubswithdist
 
     @st.cache(suppress_st_warning=True)
     def get_tube_travel():
-        data_tubetravel = pd.read_csv('.\\data_tubetravel.csv',index_col=0)
+        # data_tubetravel = pd.read_csv('.\\data_tubetravel.csv',index_col=0)
+        url = 'https://github.com/gbiggs31/halfway2/data_tubetravel.csv'
+        # pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
+        data_tubetravel = pd.read_csv(url)
         return data_tubetravel
 
     @st.cache(suppress_st_warning=True)
     def get_station_data():
-        data_stations = pd.read_csv('.\\stations.csv')
+        # data_stations = pd.read_csv('.\\stations.csv')
+        url = 'https://github.com/gbiggs31/halfway2/data_stations.csv'
+        data_stations = pd.read_csv(url)
         return data_stations
 
     @st.cache(suppress_st_warning=True)
     def get_travel_data():
         #now grab the all important travel times
-        data_travel = pd.read_csv('.\\travel_times.csv')
+        # data_travel = pd.read_csv('.\\travel_times.csv')
+        url = 'https://github.com/gbiggs31/halfway2/data_travel.csv'
+        data_travel = pd.read_csv(url)
         return data_travel
 
     @st.cache(suppress_st_warning=True)
     def get_tube_to_tube_data():
         # get simply the travel time all tubes to all tubes
-        station_to_station_time = pd.read_csv('.\\station_to_station_time.csv')
+        # station_to_station_time = pd.read_csv('.\\station_to_station_time.csv')
+        url = 'https://github.com/gbiggs31/halfway2/station_to_station_time.csv'
+        station_to_station_time = pd.read_csv(url)
+
         return station_to_station_time
 
     @st.cache(suppress_st_warning=True)
     def get_pub_to_station_data():
         # get the precomputed walking time from each pub to each station
-        pub_to_station_data = pd.read_csv(r'./pub_time_to_stations.csv')
+        # pub_to_station_data = pd.read_csv(r'./pub_time_to_stations.csv')
+        url = 'https://github.com/gbiggs31/halfway2/pub_to_station_data.csv'
+        pub_to_station_data = pd.read_csv(url)
         return pub_to_station_data
 
 

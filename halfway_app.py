@@ -28,7 +28,10 @@ def main():
         for z in range(numentries):
             result = None
             while result is None:
-                d["user_input{0}".format(z)] = input("What's your address? ")
+                # convert to streamlit
+                unique_key = 'address_input' + str(z)
+                user_input = st.text_input("What's your address? ", "Charing Cross, London", key = unique_key)
+                d["user_input{0}".format(z)] = user_input #input("What's your address? ")
                 #type(name)
                 #d["user_input{0}".format(z)]= "London"
                 d["user_input_geocode{0}".format(z)]  = geolocator.geocode(d["user_input{0}".format(z)])
@@ -44,29 +47,35 @@ def main():
 
 
     # define and get all input data 
+    @st.cache(suppress_st_warning=True)
     def get_pubs_data():
         pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
         #read in the already calculated tube network travel time data set
         return pubswithdist
 
+    @st.cache(suppress_st_warning=True)
     def get_tube_travel():
         data_tubetravel = pd.read_csv('.\\data_tubetravel.csv',index_col=0)
         return data_tubetravel
 
+    @st.cache(suppress_st_warning=True)
     def get_station_data():
         data_stations = pd.read_csv(".\\stations_csv.sv.csv")
         return data_stations
 
+    @st.cache(suppress_st_warning=True)
     def get_travel_data():
         #now grab the all important travel times
         data_travel = pd.read_csv(".\\travel_times.csv")
         return data_travel
 
+    @st.cache(suppress_st_warning=True)
     def get_tube_to_tube_data():
         # get simply the travel time all tubes to all tubes
         station_to_station_time = pd.read_csv(".\\station_to_station_time.csv")
         return station_to_station_time
 
+    @st.cache(suppress_st_warning=True)
     def get_pub_to_station_data():
         # get the precomputed walking time from each pub to each station
         pub_to_station_data = pd.read_csv(r'./pub_time_to_stations.csv')
@@ -160,8 +169,19 @@ def main():
         return combined_user_times
 
     def run_script():    
+        # specify the streamlit scaffolding
+        st.title('Halfway')
+        st.title('Because beer is about compromise \n')
 
-        numentries = int(input("How many addresses?"))
+
+        # numentries = int(input("How many addresses?"))
+
+        # Add a slider to the sidebar:
+        numentries = st.sidebar.slider(
+            'Select a number of addresses to minimise',
+            1, 15, (1),  key="address_number"
+        )
+
         location_entry = get_coords_for_address(numentries)
         
         combined_user_times = []
@@ -178,10 +198,27 @@ def main():
 
         #ditch any nans
         sorted_user_times = sorted_user_times.dropna()
+        orig_columns = sorted_user_times.columns
+        
+        col_list = []
+        for column in orig_columns:
+            new_column = 'User ' + str(column) + ' Travel Time'
+            col_list.append(new_column)
+
+        sorted_user_times.columns = col_list
+        # sorted_user_times = np.round(sorted_user_times,2)
         return sorted_user_times
 
     answer = run_script()
-    print(answer)
+    st.write(answer)
+    # print(answer)
+
+    # pubswithdist = get_pubs_data()
+    # st.write(pubswithdist[['1','2','3','8']])
+
+
+
+
 if __name__ == "__main__":
     main()
 

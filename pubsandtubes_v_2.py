@@ -7,9 +7,6 @@
 import pandas as pd
 import numpy as np
 import math
-# import missingno as mn
-# import matplotlib.pyplot as plt
-# import seaborn as sn
 import pickle
 from geopy.geocoders import Nominatim
 
@@ -64,12 +61,19 @@ def get_travel_data():
     data_travel = pd.read_csv(".\\travel_times.csv")
     return data_travel
 
+def get_tube_to_tube_data():
+    # get simply the travel time all tubes to all tubes
+    station_to_station_time = pd.read_csv(".\\station_to_station_time.csv")
+    return station_to_station_time
+
+
 def get_all_data():
     pubswithdist = get_pubs_data()
     data_tubetravel = get_tube_travel()
     data_sations = get_station_data()
     data_travel = get_travel_data()
-    return pubswithdist, data_tubetravel, data_sations, data_travel 
+    station_to_station_time = get_tube_to_tube_data()
+    return pubswithdist, data_tubetravel, data_sations, data_travel, station_to_station_time 
 
 #need to assign every pub a nearest tube
 # this should be cached appropriately
@@ -91,6 +95,16 @@ def coords_to_distance(x1,x2,y1,y2):
     #this is in km
     return d
 
+# try and set it up to do the two matrix and a vector methodology
+
+# matrix 1, tube to tube, precomputed, stored and in get data
+
+# person to tube vector
+
+
+
+
+
 # could optimise but time is so fast probably not worth it
 def find_nearest_station(input_lat, input_long, user_num, data_stations):
     min_distance = 1000
@@ -104,19 +118,32 @@ def find_nearest_station(input_lat, input_long, user_num, data_stations):
             closest_tube_id = getattr(tube,'id')
     return closest_tube_id        
 
-
+def nearest_station_to_rest(closest_tube_id):
+    person_travel = []
+    tube_id = []
+    tube_results = []
+    
+    from ast import literal_eval
+    test_dict = literal_eval(data_tubetravel[data_tubetravel['id'] == closest_tube_id]['travel_times'][closest_tube_id - 1])
+    
+    for destination in test_dict:
+        person_travel.append(test_dict[destination]['time'])
+        tube_id.append(destination)
+    return person_travel, tube_id
 
 
 
 # all code after this could be cleaned up and improved
-def find_second_station(previous_station):
-    alreadycheckedlines= []
-    for line in data_travel[data_travel['station1'] == previous_station].iterrows():
-        #print(line)
-        alreadycheckedlines.append(line[1]['line'])
-        datatravel_temp = data_travel[~data_travel['line'].isin(alreadycheckedlines)]
-        data_filtered = data_stations[data_stations['id'].isin(datatravel_temp['station1'])]
-    return data_filtered
+# think we can remove the explicited second station and even nearest tube calculation
+
+# def find_second_station(previous_station):
+#     alreadycheckedlines= []
+#     for line in data_travel[data_travel['station1'] == previous_station].iterrows():
+#         #print(line)
+#         alreadycheckedlines.append(line[1]['line'])
+#         datatravel_temp = data_travel[~data_travel['line'].isin(alreadycheckedlines)]
+#         data_filtered = data_stations[data_stations['id'].isin(datatravel_temp['station1'])]
+#     return data_filtered
 
 
 #need this to be self contained, and output an identifiable dataset ready for further processing
@@ -127,16 +154,8 @@ def distance_to_pubs(input_lat,input_long,user_num,data_stations):
     #data tubetravel contains travel time from each tube station to every other tube station
     #so just filter to the nearest tube station and check time to the rest of the network
     #need to check each line as well
-    
-    x= 1
-    person_travel = []
-    tube_id = []
-    tube_results = []
-    for line in data_tubetravel[data_tubetravel['id'] == closest_tube_id]['travel_times']:
-        while x < len(data_stations):
-            person_travel.append(line[x]['time']) 
-            tube_id.append(x)
-            x += 1
+
+    person_travel, tube_id = nearest_station_to_rest(closest_tube_id)
 
     #the above returns the travel time to all stations from the nearest station
     user_num = str(user_num)    

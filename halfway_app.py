@@ -60,7 +60,7 @@ def main():
 
     @st.cache(suppress_st_warning=True)
     def get_station_data():
-        data_stations = pd.read_csv(".\\stations_csv")
+        data_stations = pd.read_csv(".\\stations.csv")
         return data_stations
 
     @st.cache(suppress_st_warning=True)

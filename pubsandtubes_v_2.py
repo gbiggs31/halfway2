@@ -16,6 +16,8 @@ from geopy.geocoders import Nominatim
 #orrrr just treat them as independant pubs and double the length of your data, it wouldn't add much processing time
 
 
+
+
 # get the user input
 def get_coords_for_address(numentries):
     geolocator = Nominatim(user_agent= "GoogleV3")

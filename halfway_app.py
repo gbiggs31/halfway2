@@ -66,7 +66,7 @@ def main():
     @st.cache(suppress_st_warning=True)
     def get_station_data():
         # data_stations = pd.read_csv('.\\stations.csv')
-        url = 'https://github.com/gbiggs31/halfway2/stations.csv'
+        url = 'https://raw.githubusercontent.com/gbiggs31/halfway2/master/stations.csv'
         data_stations = pd.read_csv(url)
         return data_stations
 

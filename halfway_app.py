@@ -10,6 +10,7 @@ import math
 import pickle
 from geopy.geocoders import Nominatim
 import streamlit as st
+import pydeck as pdk
 
 #read in the pubs dataset already processed with distance to their nearest tube line attached
 #easiest thing is probably to start adding total travel time to nearest node point of a different line
@@ -52,6 +53,7 @@ def main():
         url = 'https://raw.githubusercontent.com/gbiggs31/halfway2/master/pubswithdist.csv'
         # pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
         pubswithdist = pd.read_csv(url)
+        pubswithdist['filter'] = pubswithdist['1'] + ', ' + pubswithdist['8']
         #read in the already calculated tube network travel time data set
         return pubswithdist
 
@@ -59,7 +61,6 @@ def main():
     def get_tube_travel():
         # data_tubetravel = pd.read_csv('.\\data_tubetravel.csv',index_col=0)
         url = 'https://raw.githubusercontent.com/gbiggs31/halfway2/master/data_tubetravel.csv'
-        # pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
         data_tubetravel = pd.read_csv(url)
         return data_tubetravel
 
@@ -182,10 +183,55 @@ def main():
         combined_user_times.sort_values(by = 'all_combined_time', inplace = True)
         return combined_user_times
 
+
+    def plot_best_pubs(orig_pubs, pubs_in_order):
+
+        
+        top_five_pubs = orig_pubs[orig_pubs['filter'].isin(answer.head().index)]
+        # data_stations = get_station_data()[['latitude', 'longitude']].dropna()
+        # data_stations = answer.dropna().head(20)
+        # st.write(data_stations)
+        st.write('Top Pubs For You:')
+        st.pydeck_chart(pdk.Deck(
+             map_style='mapbox://styles/mapbox/light-v9',
+             initial_view_state=pdk.ViewState(
+                 latitude=51.508,
+                 longitude=-0.1247,
+                 zoom=11,
+                 pitch=50,
+             ),
+             layers=[
+                 pdk.Layer(
+                    'ScatterplotLayer',
+                    data=top_five_pubs,
+                    get_position=['longitude, latitude'],
+                    get_radius=100,
+                    get_fill_color=[180, 0, 200, 140],  # Set an RGBA value for fill
+                    auto_highlight = True,
+                    # elevation_scale=4,
+                    # elevation_range=[0, 1000],
+                    pickable=True,
+                    # extruded=True,
+                 ),
+                 # pdk.Layer(
+                 #     'ScatterplotLayer',
+                 #     data=data_stations,
+                 #     get_position='[longitude, latitude]',
+                 #     auto_highlight=True,
+                 #     get_fill_color=[180, 0, 200, 140],  # Set an RGBA value for fill
+                 #     get_color='[200, 30, 0, 160]',
+                 #     get_radius=600,
+                 # ),
+             ],
+         ))
+
+
+        pass
+
     def run_script():    
         # specify the streamlit scaffolding
         st.title('Halfway')
-        st.title('Because beer is about compromise \n')
+        st.title('Because friendship is about compromise \n')
 
 
         # numentries = int(input("How many addresses?"))
@@ -207,7 +253,6 @@ def main():
                 combined_user_times = pd.DataFrame(total_user_times)
             else:
                 combined_user_times[user] = total_user_times[0]
-
         sorted_user_times = compute_best_pubs(combined_user_times)   
 
         #ditch any nans
@@ -221,16 +266,17 @@ def main():
 
         sorted_user_times.columns = col_list
         # sorted_user_times = np.round(sorted_user_times,2)
+
+
         return sorted_user_times
 
     answer = run_script()
+    st.write('Click any column to sort')
     st.write(answer)
+    # st.write(len(answer))
     # print(answer)
-
-    # pubswithdist = get_pubs_data()
-    # st.write(pubswithdist[['1','2','3','8']])
-
-
+    orig_pubs = get_pubs_data()
+    plot_best_pubs(orig_pubs, answer)
 
 
 if __name__ == "__main__":

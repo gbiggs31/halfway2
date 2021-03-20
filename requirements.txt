@@ -19,7 +19,7 @@ docutils==0.15.2
 entrypoints==0.3
 enum-compat==0.0.3
 geopy==1.20.0
-gunicorn==19.0.0
+gunicorn==19.5.0
 idna==2.10
 importlib-metadata==1.7.0
 ipykernel==5.3.2

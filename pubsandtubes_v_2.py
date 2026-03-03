@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import math
 import pickle
-from geopy.geocoders import Nominatim
+from geopy.geocoders import OpenCage
 
 #read in the pubs dataset already processed with distance to their nearest tube line attached
 #easiest thing is probably to start adding total travel time to nearest node point of a different line
@@ -20,7 +20,7 @@ from geopy.geocoders import Nominatim
 
 # get the user input
 def get_coords_for_address(numentries):
-    geolocator = Nominatim(user_agent= "GoogleV3")
+    geolocator = OpenCage(api_key='d9413714b03d4c32bdaeb1a4221fc364')
     d= {}
     # z = 1
     # while z <= numentries:

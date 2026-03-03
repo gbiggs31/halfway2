@@ -20,7 +20,7 @@ from geopy.geocoders import OpenCage
 
 # get the user input
 def get_coords_for_address(numentries):
-    geolocator = OpenCage(api_key='d9413714b03d4c32bdaeb1a4221fc364')
+    geolocator = OpenCage(api_key=["OPENCAGE_API_KEY"])
     d= {}
     # z = 1
     # while z <= numentries:

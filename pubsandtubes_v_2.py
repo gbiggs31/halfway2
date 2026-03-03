@@ -53,7 +53,7 @@ def get_tube_travel():
     return data_tubetravel
 
 def get_station_data():
-    data_stations = pd.read_csv(".\\stations_csv.sv.csv")
+    data_stations = pd.read_csv(".\\stations.csv")
     return data_stations
 
 def get_travel_data():

@@ -48,7 +48,7 @@ def main():
 
 
     # define and get all input data 
-    @st.cache(suppress_st_warning=True)
+    @st.cache_data
     def get_pubs_data():
         url = 'https://raw.githubusercontent.com/gbiggs31/halfway2/master/pubswithdist.csv'
         # pubswithdist = pd.read_csv('.\\pubswithdist.csv',index_col=0)
@@ -57,21 +57,21 @@ def main():
         #read in the already calculated tube network travel time data set
         return pubswithdist
 
-    @st.cache(suppress_st_warning=True)
+    @st.cache_data
     def get_tube_travel():
         # data_tubetravel = pd.read_csv('.\\data_tubetravel.csv',index_col=0)
         url = 'https://raw.githubusercontent.com/gbiggs31/halfway2/master/data_tubetravel.csv'
         data_tubetravel = pd.read_csv(url)
         return data_tubetravel
 
-    @st.cache(suppress_st_warning=True)
+    @st.cache_data
     def get_station_data():
         # data_stations = pd.read_csv('.\\stations.csv')
         url = 'https://raw.githubusercontent.com/gbiggs31/halfway2/master/stations.csv'
         data_stations = pd.read_csv(url)
         return data_stations
 
-    @st.cache(suppress_st_warning=True)
+    @st.cache_data
     def get_travel_data():
         #now grab the all important travel times
         # data_travel = pd.read_csv('.\\travel_times.csv')
@@ -79,7 +79,7 @@ def main():
         data_travel = pd.read_csv(url)
         return data_travel
 
-    @st.cache(suppress_st_warning=True)
+    @st.cache_data
     def get_tube_to_tube_data():
         # get simply the travel time all tubes to all tubes
         # station_to_station_time = pd.read_csv('.\\station_to_station_time.csv')
@@ -88,7 +88,7 @@ def main():
 
         return station_to_station_time
 
-    @st.cache(suppress_st_warning=True)
+    @st.cache_data
     def get_pub_to_station_data():
         # get the precomputed walking time from each pub to each station
         # pub_to_station_data = pd.read_csv(r'./pub_time_to_stations.csv')
@@ -174,7 +174,7 @@ def main():
         user_and_tube = combine_person_and_station_travel(person_tube, tube_to_tube_data)
         
         pub_to_station = get_pub_to_station_data()
-        total_travel = combine_person_and_pub_travel(user_and_tube, pub_to_station)
+        total_travel = np.round(combine_person_and_pub_travel(user_and_tube, pub_to_station),2)
         return total_travel
 
 
@@ -184,49 +184,58 @@ def main():
         return combined_user_times
 
 
-    def plot_best_pubs(orig_pubs, pubs_in_order):
+    def plot_best_pubs(orig_pubs, pubs_in_order, user_locations):
+        import folium
+        from streamlit_folium import st_folium
 
-        
-        top_five_pubs = orig_pubs[orig_pubs['filter'].isin(answer.head().index)]
-        # data_stations = get_station_data()[['latitude', 'longitude']].dropna()
-        # data_stations = answer.dropna().head(20)
-        # st.write(data_stations)
-        st.write('Top Pubs For You:')
-        st.pydeck_chart(pdk.Deck(
-             map_style='mapbox://styles/mapbox/light-v9',
-             initial_view_state=pdk.ViewState(
-                 latitude=51.508,
-                 longitude=-0.1247,
-                 zoom=11,
-                 pitch=50,
-             ),
-             layers=[
-                 pdk.Layer(
-                    'ScatterplotLayer',
-                    data=top_five_pubs,
-                    get_position=['longitude, latitude'],
-                    get_radius=100,
-                    get_fill_color=[180, 0, 200, 140],  # Set an RGBA value for fill
-                    auto_highlight = True,
-                    # elevation_scale=4,
-                    # elevation_range=[0, 1000],
-                    pickable=True,
-                    # extruded=True,
-                 ),
-                 # pdk.Layer(
-                 #     'ScatterplotLayer',
-                 #     data=data_stations,
-                 #     get_position='[longitude, latitude]',
-                 #     auto_highlight=True,
-                 #     get_fill_color=[180, 0, 200, 140],  # Set an RGBA value for fill
-                 #     get_color='[200, 30, 0, 160]',
-                 #     get_radius=600,
-                 # ),
-             ],
-         ))
+        top10_indices = pubs_in_order.head(10).index
+        top10_pubs = orig_pubs[orig_pubs['filter'].isin(top10_indices)].copy()
+        top10_pubs = top10_pubs.dropna(subset=['latitude', 'longitude'])
 
+        top10_pubs['rank'] = top10_pubs['filter'].map(
+            {idx: rank + 1 for rank, idx in enumerate(top10_indices)}
+        )
+        top10_pubs['avg_travel_time'] = top10_pubs['filter'].map(
+            lambda idx: round(pubs_in_order.loc[idx, 'all_combined_time'] / len(user_locations), 1)
+            if idx in pubs_in_order.index else None
+        )
+        top10_pubs['pub_name'] = top10_pubs['1']
 
-        pass
+        all_lats = list(top10_pubs['latitude']) + [u[0] for u in user_locations]
+        all_lons = list(top10_pubs['longitude']) + [u[1] for u in user_locations]
+        centre_lat = sum(all_lats) / len(all_lats)
+        centre_lon = sum(all_lons) / len(all_lons)
+
+        m = folium.Map(location=[centre_lat, centre_lon], zoom_start=12, tiles='CartoDB dark_matter')
+
+        # pub pins
+        for _, row in top10_pubs.iterrows():
+            folium.Marker(
+                location=[row['latitude'], row['longitude']],
+                tooltip=folium.Tooltip(
+                    f"<b>{row['pub_name']}</b><br/>Rank #{int(row['rank'])} · ~{row['avg_travel_time']} min avg",
+                    sticky=True
+                ),
+                icon=folium.DivIcon(html=f"""
+                    <div style="
+                        font-size: 24px;
+                        text-align: center;
+                        line-height: 1;
+                        filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.8));
+                    ">🍺</div>
+                """)
+            ).add_to(m)
+
+        # user pins
+        for i, (lat, lon) in enumerate(user_locations):
+            folium.Marker(
+                location=[lat, lon],
+                tooltip=f'Person {i + 1}',
+                icon=folium.Icon(color='blue', icon='home', prefix='fa'),
+            ).add_to(m)
+
+        st.subheader("Top 10 Pubs Map")
+        st_folium(m, width=700, height=500)
 
     def run_script():    
         # specify the streamlit scaffolding
@@ -257,26 +266,37 @@ def main():
 
         #ditch any nans
         sorted_user_times = sorted_user_times.dropna()
+        answer_for_map = sorted_user_times.copy()
         orig_columns = sorted_user_times.columns
         
         col_list = []
         for column in orig_columns:
-            new_column = 'User ' + str(column) + ' Travel Time'
+            # new_column = 'User ' + str(column) + ' Travel Time (Mins)'
+            if column == 'all_combined_time':
+                new_column = 'Total Travel Time (Mins)'
+            else:
+                new_column = 'User ' + str(column) + ' Travel Time (Mins)'
             col_list.append(new_column)
 
         sorted_user_times.columns = col_list
         # sorted_user_times = np.round(sorted_user_times,2)
 
+        user_locations = [
+            (location_entry['user_input_latitude' + str(i)], location_entry['user_input_longitude' + str(i)])
+            for i in range(numentries)
+            ]
 
-        return sorted_user_times
+        return sorted_user_times, user_locations, answer_for_map
 
-    answer = run_script()
+
+
+    answer, user_locations, answer_for_map = run_script()
     st.write('Click any column to sort')
     st.write(answer)
     # st.write(len(answer))
     # print(answer)
     orig_pubs = get_pubs_data()
-    plot_best_pubs(orig_pubs, answer)
+    plot_best_pubs(orig_pubs, answer_for_map, user_locations)
 
 
 if __name__ == "__main__":
